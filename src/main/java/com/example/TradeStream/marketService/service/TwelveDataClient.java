@@ -28,8 +28,6 @@ public class TwelveDataClient {
         externalApiRateLimiter.acquireTwelveData();
         String url = baseUrl + "/stocks?country=United States&type=Common Stock&apikey=" + apiKey;
 
-        System.out.println("TEST THIS URL " + url);
-
         try {
             TwelveDataStocksResponse response =
                     restTemplate.getForObject(url, TwelveDataStocksResponse.class);
@@ -47,11 +45,10 @@ public class TwelveDataClient {
             }
 
 
-            // LIMIT RESULT TO 50
             if (response.getData() != null && response.getData().size() > limit) {
                 response.setData(response.getData().subList(0, limit));
             }
-            System.out.println("TEST THIS RESPONSE " + response);
+            log.debug("Fetched {} stocks from Twelve Data", response.getData() != null ? response.getData().size() : 0);
             return response;
         } catch (RestClientException ex) {
             log.error("Twelve Data stocks API failed with limit {}", limit, ex);
@@ -149,7 +146,7 @@ public class TwelveDataClient {
             if (response == null || response.getName() == null || response.getName().isBlank()) {
                 throw new MarketDataApiException("No valid company profile found for symbol: " + symbol);
             }
-            System.out.println(response);
+            log.debug("Fetched company profile for symbol {}", symbol);
             return response;
         } catch (RestClientException ex) {
             log.error("Twelve Data profile API failed for symbol {}", symbol, ex);

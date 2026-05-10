@@ -11,6 +11,8 @@ import com.example.TradeStream.userService.service.UserService;
 import com.example.TradeStream.walletService.exception.APIException;
 import com.example.TradeStream.walletService.service.WalletTransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,7 +37,12 @@ public class OrderController {
     private final CoinService coinService;
     private final WalletTransactionService walletTransactionService;
 
-    @Operation(summary = "Place a BUY or SELL order", description = "Executes the order and debits/credits the user wallet immediately")
+    @Operation(summary = "Place a BUY or SELL order", description = "Executes the order and debits/credits the user wallet immediately",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Order placed successfully"),
+                @ApiResponse(responseCode = "400", description = "Insufficient wallet balance or invalid request"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized")
+            })
     @PostMapping("/pay")
     public ResponseEntity<Order> doOrderPayment(Authentication authentication, @Valid @RequestBody CreateOrderRequest request) {
         User user = userService.getUserByUserName(authentication.getName());
@@ -44,9 +51,16 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    @Operation(summary = "Get order by ID (owner only)")
+    @Operation(summary = "Get order by ID (owner only)",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Order returned"),
+                @ApiResponse(responseCode = "403", description = "Order belongs to a different user"),
+                @ApiResponse(responseCode = "404", description = "Order not found"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized")
+            })
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long orderId, Authentication authentication) {
+    public ResponseEntity<Order> getOrderById(
+            @Parameter(description = "Order database ID") @PathVariable Long orderId, Authentication authentication) {
         User user = userService.getUserByUserName(authentication.getName());
         Order order = orderService.getOrderById(orderId);
         if (!order.getUser().getId().equals(user.getId())) {
@@ -55,13 +69,17 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    @Operation(summary = "Get paginated order history for the authenticated user")
+    @Operation(summary = "Get paginated order history for the authenticated user",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Order page returned"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized")
+            })
     @GetMapping("/my-orders")
     public ResponseEntity<Page<Order>> getUserOrders(
             Authentication authentication,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @Parameter(description = "Zero-based page index") @RequestParam(defaultValue = "0")  int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Sort direction: asc or desc") @RequestParam(defaultValue = "desc") String sortDir) {
         User user = userService.getUserByUserName(authentication.getName());
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by("timestamp").ascending()

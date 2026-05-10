@@ -93,7 +93,10 @@ public ResponseEntity<?> AuthenticateUSer(@RequestBody User user) {
         return ResponseEntity.ok(userInfoResponse);
     }
 
-    @Operation(summary = "Sign out and clear the security context")
+    @Operation(summary = "Sign out and clear the security context",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Signed out successfully")
+            })
     @PostMapping("/signout")
     public ResponseEntity<?> signout() {
         SecurityContextHolder.clearContext();
